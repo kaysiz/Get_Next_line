@@ -6,7 +6,7 @@
 /*   By: ksiziva <marvin@42.fr>                     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2018/06/22 09:59:24 by ksiziva           #+#    #+#             */
-/*   Updated: 2018/06/29 17:17:15 by ksiziva          ###   ########.fr       */
+/*   Updated: 2018/06/30 08:19:11 by ksiziva          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,6 +17,8 @@
 # include "libft/libft.h"
 
 # define BUFF_SIZE 32
+# define MAX_FD 1024 + 1
+# define RET_VALUE(ret)	ret > 0 ? 1 : ret
 
 int		get_next_line(const int fd, char **line);
 

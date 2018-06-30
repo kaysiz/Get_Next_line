@@ -6,78 +6,78 @@
 /*   By: ksiziva <marvin@42.fr>                     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2018/06/22 09:59:01 by ksiziva           #+#    #+#             */
-/*   Updated: 2018/06/29 17:15:29 by ksiziva          ###   ########.fr       */
+/*   Updated: 2018/06/30 08:25:38 by ksiziva          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "get_next_line.h"
 
-int		get_line(char **save, char ***line)
+static int          check_new_line(char **stack, char **line)
 {
-	int		x;
-	char	*sub;
+    char            *tmp_stack;
+    char            *strchr_stack;
+    int             i;
 
-	if (ft_strchr(*save, '\n'))
-	{
-		x = 0;
-		while (save[0][x] != '\n')
-			x++;
-		**line = ft_strcat(**line, ft_strsub(*save, 0, x));
-		sub = ft_strchr(*save, '\n');
-		*save = ft_strdup(sub) + 1;
-		return (1);
-	}
-	else
-	{
-		**line = ft_strcat(**line, *save);
-	}
-	return (0);
+    i = 0;
+    strchr_stack = *stack;
+    while (strchr_stack[i] != '\n')
+        if (!strchr_stack[i++])
+            return (0);
+    tmp_stack = &strchr_stack[i];
+    *tmp_stack = '\0';
+    *line = ft_strdup(*stack);
+    *stack = ft_strdup(tmp_stack + 1);
+    return (1);
 }
 
-int		read_text(int fd, char **line)
+static  int         read_file(int fd, char *heap, char **stack, char **line)
 {
-	char			buff[BUFF_SIZE + 1];
-	static	char	*save = "";
-	char			*sub;
-	int				x;
-	int				ret;
+    int             ret;
+    char            *tmp_stack;
 
-	if (get_line(&save, &line) == 1)
-		return (1);
-	while ((ret = read(fd, buff, BUFF_SIZE)))
-	{
-		buff[ret] = '\0';
-		if (ft_strchr(buff, '\n'))
-		{
-			x = 0;
-			while (buff[x] != '\n')
-				x++;
-			*line = ft_strcat(*line, ft_strsub(buff, 0, x));
-			sub = ft_strchr(buff, '\n');
-			save = ft_strdup(sub) + 1;
-			return (1);
-		}
-		else
-			*line = ft_strcat(*line, buff);
-	}
-	return (0);
+    while ((ret = read(fd, heap, BUFF_SIZE)) > 0)
+    {
+        heap[ret] = '\0';
+        if (*stack)
+        {
+            tmp_stack = *stack;
+            *stack = ft_strjoin(tmp_stack, heap);
+            free(tmp_stack);
+            tmp_stack = NULL;
+        }
+        else
+            *stack = ft_strdup(heap);
+        if (check_new_line(stack, line))
+            break ;
+    }
+    return (RET_VALUE(ret));
 }
 
-int		get_next_line(const int fd, char **line)
+int                 get_next_line(int const fd, char **line)
 {
-	int		x;
-	char	*str;
+    static char     *stack[MAX_FD];
+    char            *heap;
+    int             ret;
+    int             i;
 
-	str = "";
-	if (str)
-		ft_bzero(str, ft_strlen(str));
-	if (fd < 0)
-		return (-1);
-	x = read_text(fd, &str);
-	*line = str;
-	if (ft_strlen(str) > 0)
-		return (1);
-	if (x == 0)
-		free(*line);
-	return (x);
+    if (!line || (fd < 0 || fd >= MAX_FD) || (read(fd, stack[fd], 0) < 0) \
+        || !(heap = (char *)malloc(sizeof(char) * BUFF_SIZE + 1)))
+        return (-1);
+    if (stack[fd])
+        if (check_new_line(&stack[fd], line))
+            return (1);
+    i = 0;
+    while (i < BUFF_SIZE)
+        heap[i++] = '\0';
+    ret = read_file(fd, heap, &stack[fd], line);
+    free(heap);
+    if (ret != 0 || stack[fd] == NULL || stack[fd][0] == '\0')
+    {
+        if (!ret && *line)
+            *line = NULL;
+        return (ret);
+    }
+    *line = stack[fd];
+    stack[fd] = NULL;
+    return (1);
 }
